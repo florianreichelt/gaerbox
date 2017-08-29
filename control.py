@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 import os
 import re
 import json
+import datetime
 
 
 class GaerboxException(Exception):
@@ -30,32 +31,6 @@ class Heating:
 		
 	def cleanup(self):
 		GPIO.cleanup()
-		
-
-class TempSensor:
-	value = 0.0
-
-	def __init__(self, deviceNumber):
-		self.deviceNumber = deviceNumber
-		self.deviceFilename = "/sys/bus/w1/devices/" + deviceNumber + "/w1_slave"
-		if not os.path.isfile(self.deviceFilename):
-			raise GaerboxException("device file not found")
-
-	def update(self):
-		ret = False
-		file = open(self.deviceFilename, "r")
-		line = file.readline()
-		if re.match(r"([0-9a-f]{2} ){9}: crc=[0-9a-f]{2} YES", line):
-			line = file.readline()
-			m = re.match(r"([0-9a-f]{2} ){9}t=([+-]?[0-9]+)", line)
-			if m:
-				self.value = float(m.group(2)) / 1000.0
-				ret = True
-		file.close()
-		return ret
-
-	def getValue(self):
-		return self.value
 
 
 class Time:
@@ -67,6 +42,7 @@ class Time:
 	def toJson(self):
 		dict = { "hour" : self.hour, "min" : self.min, "sec" : self.sec }
 		return json.dumps(dict)
+
 
 class Temperature:
 	def __init__(self, temp, time):
@@ -92,16 +68,52 @@ class Temperature:
 		dict = { "temp" : self.temp, "time" : timeDict }
 		return json.dumps(dict)
 
-	def fromJson(self, obj):
-		dict = json.loads(obj)
+	#def fromJson(self, obj):
+		#dict = json.loads(obj)
 		#self.time
+
+
+class TempSensor:
+	def __init__(self, deviceNumber):
+		self.deviceNumber = deviceNumber
+		self.deviceFilename = "/sys/bus/w1/devices/" + deviceNumber + "/w1_slave"
+		if not os.path.isfile(self.deviceFilename):
+			raise GaerboxException("device file not found")
+
+	def update(self):
+		ret = False
+		file = open(self.deviceFilename, "r")
+		line = file.readline()
+		if re.match(r"([0-9a-f]{2} ){9}: crc=[0-9a-f]{2} YES", line):
+			line = file.readline()
+			m = re.match(r"([0-9a-f]{2} ){9}t=([+-]?[0-9]+)", line)
+			if m:
+				temp = float(m.group(2)) / 1000.0
+                                #print "the value: " + str(value)
+                                self.setValue(temp)
+				ret = True
+		file.close()
+		return ret
+
+        def setValue(self, value):
+                time = datetime.datetime.now()
+                time = Time(time.hour, time.minute, time.second)
+                self.value = Temperature(value, time)
+
+	def getValue(self):
+		return self.value
+
+
+class GaerboxSensor(TempSensor):
+        def __init__(self):
+                TempSensor.__init__(self, "10-000803197736")
 
 
 class TempLogger:
 	measurements = []		
 
 	def __init__(self, filename):
-		self.file = open(filename, "a")
+		self.filename = filename
 
 	#def measurementToJson(self, measurement):
 		
@@ -117,3 +129,20 @@ class TempLogger:
 			return self.measurements[len(self.measurements) - 1]
 		raise GaerboxException("Out of bounds")
 
+        #def getJson(self):
+            #list = []
+            #for meas in self.measurements:
+                #list.append(json.load(meas.toJson()))
+            #return list
+        
+        def writeFile(self):
+            file = open(self.filename, "w")
+            file.write("[\n")
+            for i in range(0, len(self.measurements)):
+                file.write("  " + self.measurements[i].toJson())
+                if i < len(self.measurements)-1:
+                    file.write(",\n")
+                else:
+                    file.write("\n")
+            file.write("]")
+            file.close()
