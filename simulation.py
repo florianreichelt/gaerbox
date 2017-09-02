@@ -4,21 +4,6 @@ from mypid import PIDControl
 import numpy as np
 
 
-# file = open("Z:/log_heating.txt")
-#
-# data = json.load(file)
-#
-# dataTemp = []
-# dataTime = []
-# l_tmpTime = 0
-# for meas in data:
-#     dataTemp.append(float(meas["temp"]))
-#     dataTime.append(l_tmpTime)
-#     l_tmpTime = l_tmpTime + 1
-#
-# plt.plot(dataTime, dataTemp)
-# plt.show()
-
 Kp = 0.2
 Ki = 0.0029
 Kd = 0.0
@@ -36,24 +21,11 @@ def stripImpulse(f_input):
     return l_ret
 
 
-# sysImpulse = stripImpulse(sysImpulse)
-
-# plt.plot(sysImpulse, label="system impulse")
-# plt.legend()
-# plt.show()
-
-
 def simulationStep(i, systemOutputs, systemImpulse, systemInitial, systemInputs):
     systemOutputs[i] = systemInitial
     past = min([len(systemImpulse), i+1])
     for j in range(0, past):
         systemOutputs[i] += systemInputs(i-j)*systemImpulse[j]
-
-
-# l_curTime = 0
-# for i in range(0, simTime):
-#     simulationStep(i, l_curTime, sysImpulse, setPoint)
-#     l_curTime += 1
 
 
 def setPointFunc(x):
