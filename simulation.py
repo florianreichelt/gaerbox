@@ -4,9 +4,9 @@ from mypid import PIDControl
 import numpy as np
 
 
-Kp = 0.2
-Ki = 0.0029
-Kd = 0.0
+Kp = 0.3
+Ki = 0.005
+Kd = 1.1
 pid = PIDControl(Kp, Ki, Kd)
 pid.setSampleTime(1.0)
 pid.setWindup(180)
@@ -78,12 +78,13 @@ for stepIndex in range(0, simTime):
     sysSetPoints[stepIndex] = sysSetPoint
 
     pid.setSetPoint(sysSetPoint)
-    pid.doControl(sysOutput)
-    ctrlOutput = pid.output
-    if ctrlOutput > 1.0:
-        ctrlOutput = 1.0
-    if ctrlOutput < 0.0:
-        ctrlOutput = 0.0
+    if 0 == (stepIndex % 10):
+        pid.doControl(sysOutput)
+        ctrlOutput = pid.output
+        if ctrlOutput > 1.0:
+            ctrlOutput = 1.0
+        if ctrlOutput < 0.0:
+            ctrlOutput = 0.0
 
     sysInputs[stepIndex] = ctrlOutput
     sysTimes[stepIndex] = stepIndex

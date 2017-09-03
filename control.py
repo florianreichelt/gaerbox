@@ -1,15 +1,11 @@
 #!/usr/bin/python
 
 import RPi.GPIO as GPIO
+import gaerboxBase
 import os
 import re
 import json
 import datetime
-
-
-class GaerboxException(Exception):
-    def __init__(self, msg):
-        self.msg = msg
 
 
 class Heating:
@@ -95,10 +91,10 @@ class TempSensor:
         file.close()
         return ret
 
-        def setValue(self, value):
-                time = datetime.datetime.now()
-                time = Time(time.hour, time.minute, time.second)
-                self.value = Temperature(value, time)
+    def setValue(self, value):
+            time = datetime.datetime.now()
+            time = Time(time.hour, time.minute, time.second)
+            self.value = Temperature(value, time)
 
     def getValue(self):
         return self.value
