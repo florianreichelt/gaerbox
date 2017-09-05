@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import json
 from mypid import PIDControl
 import numpy as np
+from controlCurve import ControlCurve, CurvePart
 
 
 Kp = 0.3
-Ki = 0.005
-Kd = 1.1
+Ki = 0.003
+Kd = 11.0
 pid = PIDControl(Kp, Ki, Kd)
-pid.setSampleTime(1.0)
+pid.setSampleTime(10.0)
 pid.setWindup(180)
 
 sysImpulse = np.fromfile("sysImpulse.nparray")
@@ -27,38 +28,14 @@ def simulationStep(i, systemOutputs, systemImpulse, systemInitial, systemInputs)
     for j in range(0, past):
         systemOutputs[i] += systemInputs(i-j)*systemImpulse[j]
 
-
-def setPointFunc(x):
-    l_const1 = 30.0
-    l_const2 = 30.0
-    l_const3 = 22.0
-    l_const4 = 22.0
-    l_const5 = 35.0
-
-    l_ival1 = 60 * 60
-    l_ival2 = 60 * 60
-    l_ival3 = 60 * 60
-    l_ival4 = 60 * 15
-    l_ival5 = 60 * 60
-
-    l_lin1 = 0.0
-    l_lin2 = -(1.0 / l_ival2) * 5.0
-    l_lin3 = 0.0
-    l_lin4 = (1.0 / l_ival4) * 13.0
-    l_lin5 = 0.0
-
-    l_ret = 0
-    if x < l_ival1:
-        l_ret = l_const1
-    elif x < l_ival1 + l_ival2:
-        l_ret = l_const2 + l_lin2*(x - l_ival1)
-    elif x < l_ival1 + l_ival2 + l_ival3:
-        l_ret = l_const3
-    elif x < l_ival1 + l_ival2 + l_ival3 + l_ival4:
-        l_ret = l_const4 + l_lin4*(x - (l_ival1 + l_ival2 + l_ival3))
-    elif x < l_ival1 + l_ival2 + l_ival3 + l_ival4 + l_ival5:
-        l_ret = l_const5
-    return l_ret
+curve = ControlCurve([
+    CurvePart(3600, 27, 0),
+    CurvePart(3600, 30, -(1.0 / 3600) * 5.0),
+    CurvePart(3600, 22, 0),
+    CurvePart(60*15, 22, (1.0 / (60*15)) * 13.0),
+    CurvePart(3600, 35, 0)
+])
+setPointFunc = lambda x: curve.sample(x)
 
 simTime = 4 * 3600 + 15*60
 

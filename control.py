@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import RPi.GPIO as GPIO
-import gaerboxBase
+from gaerboxBase import GaerboxException, JSONSerializable, JSONDeserializable
 import os
 import re
 import json
@@ -29,18 +29,29 @@ class Heating:
         GPIO.cleanup()
 
 
-class Time:
+class Time(JSONSerializable):
     def __init__(self, hour, min, sec):
         self.hour = hour
         self.min = min
         self.sec = sec
 
-    def toJson(self):
-        dict = { "hour" : self.hour, "min" : self.min, "sec" : self.sec }
-        return json.dumps(dict)
+    def toDict(self):
+        return {"hour": self.hour, "min": self.min, "sec": self.sec}
 
 
-class Temperature:
+class TimeJSON(JSONDeserializable):
+    def __init__(self, jsonStr):
+        self.fromJSON(jsonStr)
+
+    def fromJSON(self, jsonStr):
+        dict = json.loads(jsonStr)
+        hour = int(dict["hour"])
+        min = int(dict["min"])
+        sec = int(dict["sec"])
+        super(TimeJSON, self).__init__(hour, min, sec)
+
+
+class Temperature(JSONSerializable):
     def __init__(self, temp, time):
         self.temp = temp
         self.time = time
@@ -49,7 +60,6 @@ class Temperature:
         self.temp = temp
 
     def setTime(self, time):
-        self.hour = hour
         self.time = time
 
     def getTemp(self):
@@ -58,15 +68,13 @@ class Temperature:
     def getTime(self):
         return self.time
 
-    def toJson(self):
-        timeObj = self.time.toJson()
-        timeDict = json.loads(timeObj)
-        dict = { "temp" : self.temp, "time" : timeDict }
-        return json.dumps(dict)
+    def toDict(self):
+        return {"temp": self.temp, "time": self.time.toDict()}
 
-    #def fromJson(self, obj):
-        #dict = json.loads(obj)
-        #self.time
+
+class TemperatureJSON(JSONDeserializable):
+    def __init__(self, jsonStr):
+        self.fromJSON(jsonStr)
 
 
 class TempSensor:
@@ -105,40 +113,20 @@ class GaerboxSensor(TempSensor):
         TempSensor.__init__(self, "10-000803197736")
 
 
-class TempLogger:
-    measurements = []
-
-    def __init__(self, filename):
-        self.filename = filename
-
-    #def measurementToJson(self, measurement):
-
+class TemperatureLog(JSONSerializable):
+    def __init__(self):
+        self.measurements = []
 
     def push(self, measurement):
         self.measurements.append(measurement)
 
-    def getMeasurements(self):
-        return self.measurements
-
-    def getLastMeasurement(self):
-        if len(self.measurements):
+    def last(self):
+        if len(self.measurements) > 0:
             return self.measurements[len(self.measurements) - 1]
         raise GaerboxException("Out of bounds")
 
-    #def getJson(self):
-        #list = []
-        #for meas in self.measurements:
-            #list.append(json.load(meas.toJson()))
-        #return list
-
-    def writeFile(self):
-        file = open(self.filename, "w")
-        file.write("[\n")
-        for i in range(0, len(self.measurements)):
-            file.write("  " + self.measurements[i].toJson())
-            if i < len(self.measurements)-1:
-                file.write(",\n")
-            else:
-                file.write("\n")
-        file.write("]")
-        file.close()
+    def toDict(self):
+        dict = []
+        for i in range(len(self.measurements)):
+            dict.append(self.measurements[i].toDict())
+        return dict
