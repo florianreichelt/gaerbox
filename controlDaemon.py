@@ -6,11 +6,11 @@ import json
 import gaerbox
 import time
 import timeService
+import queue
 
-reqCV = threading.Condition()
-respCV = threading.Condition()
-reqs = []
-resps = []
+
+reqQueue = queue.Queue()
+respQueue = queue.Queue()
 
 reqFifo = '/tmp/gaerboxReqFifo'
 respFifo = '/tmp/gaerboxRespFifo'
@@ -28,7 +28,7 @@ class RequestListener(threading.Thread):
 
     def run(self):    
         while True:
-            print("opening gaerbox_control FIFO ...")
+            #print("opening gaerbox_control FIFO ...")
             with open(reqFifo) as fifo:
                 print("  opened")
                 while True:
@@ -36,7 +36,7 @@ class RequestListener(threading.Thread):
                     if len(data) == 0:
                         print("  writer closed")
                         break
-                    print('  read: "{0}"'.format(data))
+                    print("  read: {0}".format(data))
                     self.processRequest(data)
 
     def processRequest(self, data):       
@@ -46,22 +46,26 @@ class RequestListener(threading.Thread):
         except:
             print("Error: received non JSON request!")
         if dict:
-            with reqCV:
-                reqs.append(dict)
-                reqCV.notify()
+            reqQueue.put(dict)
             
             resp = None
-            with respCV:
-                while len(resps) == 0:
-                    print("processRequest(): waiting for response data")
-                    respCV.wait()
-                resp = resps.pop(0)
-
-            f = open(respFifo, "w")
-            json.dump(resp, f)
-            f.close()
-            print("processRequest(): sent response")
-
+            i = 0
+            while respQueue.empty() and i < 4*5:
+                time.sleep(0.25)
+                i += 1
+            # TODO: implement ID matching for request/response pairs. If ID
+            # does not match, then also report controlTimeout.
+            if respQueue.empty():
+                resp = {"response":"controlTimeout"}
+            else:
+                resp = respQueue.get()
+            print("processRequest(): sending FIFO response ...")
+            with open(respFifo, "w") as f:
+                json.dump(resp, f)
+            print("processRequest(): response sent")
+        else:
+            with open(respFifo, "w") as f:
+                json.dump({ "response" : "inputError" }, f)
 
 listener = RequestListener()
 listener.setDaemon(True)
@@ -77,20 +81,21 @@ def pushResponse(respType, val=None):
         resp = {"response":respType, "value":val}
     else:
         resp = {"response":respType}
-    with respCV:
-        resps.append(resp)
-        respCV.notify()
+    
+    respQueue.put(resp)
 
 
 def processRequest(request):    
     if request:
         cmd = request["cmd"]
         if cmd == "setTemperature":
-            val = cmd["value"]
+            val = request["value"]
             print("setTemperature: value = " + str(val))
             gb.setTemperature(val)
+            gb.enableCtrl(True)
             pushResponse("ack")
         elif cmd == "stopHeating":
+            gb.enableCtrl(False)
             gb.reset()
             pushResponse("ack")
         elif cmd == "getTemperature":
@@ -99,21 +104,30 @@ def processRequest(request):
         else:
             pushResponse("unsup")
 
-
-currentTime = time.perf_counter()
+controlInterval = 10.0
+nextControlTime = time.perf_counter() + controlInterval
 try:
     while True:
         request = None
-        with reqCV:
-            if len(reqs) != 0:
-                request = reqs.pop(0)
+        if not reqQueue.empty():
+            request = reqQueue.get()
 
+        time.sleep(0.25)
         processRequest(request)
-        timeService.waitUntil(currentTime + 10.0, 12.0)
-        currentTime = time.perf_counter()
-        gb.update()
 
-        print("Temp: " + gb.temperatureLog.last().toJSON())
+        #timeService.waitUntil(currentTime + 10.0, 12.0)
+
+        currentTime = time.perf_counter()
+        if currentTime > nextControlTime:
+            nextControlTime = currentTime + controlInterval
+            gb.update()
+            print("Temp: " + gb.temperatureLog.last().toJSON())
+
 except KeyboardInterrupt:
     gb.cleanup()
     sys.exit()
+except:
+    print("Unhandled exception! Aborting execution now!")
+    gb.cleanup()
+    sys.exit()
+
