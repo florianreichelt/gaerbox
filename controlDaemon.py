@@ -122,12 +122,16 @@ try:
             nextControlTime = currentTime + controlInterval
             gb.update()
             print("Temp: " + gb.temperatureLog.last().toJSON())
-
 except KeyboardInterrupt:
-    gb.cleanup()
-    sys.exit()
+    print("Interrupt by user")
+except Queue.Full:
+    print("Received Queue.Full exception. Aborting")
+except Queue.Empty:
+    print("Received Queue.Empty exception. Aborting")
 except:
     print("Unhandled exception! Aborting execution now!")
+finally:
+    print("Exiting ...")
     gb.cleanup()
     sys.exit()
 
