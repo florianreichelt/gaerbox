@@ -1,7 +1,21 @@
 extends layout
 
 block content
-	h1= title
-	p#idCurrentTemp
-	script(src="https://code.jquery.com/jquery-1.9.1.min.js")
-	script(src="/javascripts/main.js")
+  div.container
+  h1= title
+
+  div.container
+    h2 Live temperature
+    p#idCurrentTemp
+  
+  div.container
+    form
+      div.form-group
+        label(for="inputSetTemperature").
+          Set temperature value
+        input#inputSetTemperature(class="form-control" placeholder="Enter temperature")
+        button#btnSetTemp(class="btn btn-primary" type="button").
+          Submit temperature
+        label#labelSetTemperatureResponse
+
+  script(src="/javascripts/main.js")

@@ -10,6 +10,9 @@
     "express": "~4.15.2",
     "jade": "~1.11.0",
     "stylus": "0.54.5",
-    "filesystem": "1.0.1"
+    "filesystem": "1.0.1",
+    "popper" : "*",
+    "jquery" : "3.2.1",
+    "bootstrap" : "4.0.0-beta"    
   }
 }

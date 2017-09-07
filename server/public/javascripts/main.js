@@ -1,18 +1,23 @@
 timer = null;
 
-function blubb() {
+function ajaxError(xhr, status, error) {
+	console.log('ajax error')
+	console.log(status)
+	console.log(error)
+}
+
+function ajaxGetTemp() {
 	console.log('hello from blubb()')
-    data = { 'cmd' : 'getTemperature' }; 
+    value = { 'cmd' : 'getTemperature' }; 
     $.ajax({
-        type: 'GET',
-        data: JSON.stringify(data),
+        type: 'POST',
+        data: JSON.stringify(value),
         dataType: 'json',
         contentType: 'application/json',
         url: '/ajax',
         success: function(response) {
-            console.log('success');
+            console.log('success1');
             try {
-            	//var result = JSON.parse(response);
             	var temp = response.value.temp;
             	console.log("AJAX received temperature: " + temp.toString());
             	
@@ -22,48 +27,63 @@ function blubb() {
             }
             
         },
-        error: function(xhr, status, error) {
-        	console.log('ajax error')
-        	console.log(status)
-        	console.log(error)
-        }
+        error: ajaxError
     });
+}
+
+function ajaxSetTemp() {
+	console.log('hello from blubb2()')
+		
+	try {
+		var value = parseInt($("#inputSetTemperature").val());
+		
+		console.log("input value: " + value);
+		
+		$("#labelSetTemperatureResponse").text("");
+		
+		if (value > 0 && !isNaN(value)) {
+			var data = { 
+					'cmd' : 'setTemperature', 
+					'value' : value
+				}; 
+			    $.ajax({
+			        type: 'POST',
+			        data: JSON.stringify(data),
+			        dataType: 'json',
+			        contentType: 'application/json',
+			        url: '/ajax',
+			        success: function(response) {
+			            console.log('success2');
+			            try {
+			            	console.log("AJAX received response: " + response.response);
+			            	
+			            	$("#labelSetTemperatureResponse").text(response.response)            	
+			            } catch (e) {
+			            	console.log("error: can't parse AJAX JSON response. Reponse was: " + text);
+			            }
+			        },
+			        error: ajaxError
+			    });	
+		} else {
+			console.log("  error: NaN value typed");
+		}
+	} catch (e) {
+		console.log("error: catched exception in ajaxSetTemp()");
+	}	
 }
 
 
 $(document).ready(function() {
-	blubb();
-	console.log("Registering timeout 10s");
+	ajaxGetTemp();
+	console.log("Registering interval 10s");
 	timer = setInterval(function() {
-		console.log("triggered");
-		blubb();
+//		console.log("triggered");
+		ajaxGetTemp();
 	}, 5000);
+	
+	$("#btnSetTemp").on("click", function(e) {		
+		console.log("Button clicked");
+		ajaxSetTemp();
+	});
+
 });
-
-
-//timer = window.setTimeout(function(){
-//	
-//}, 5)
-
-
-//$(document).ready(function() {
-//	console.log('main.js hello')
-//    data = {};
-//    data.cmd = 'getTemperature'; 
-//    $.ajax({
-//        type: 'GET',
-//        data: JSON.stringify(data),
-//        dataType: 'json',
-//        contentType: 'application/json',
-//        url: '/ajax',
-//        success: function(data) {
-//            console.log('success');
-//            console.log(JSON.stringify(data));
-//        },
-//        error: function(xhr, status, error) {
-//        	console.log('ajax error')
-//        	console.log(status)
-//        	console.log(error)
-//        }
-//    });
-//})

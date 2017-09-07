@@ -10,49 +10,50 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(bodyParser.urlencoded({ extended: false }));
+//app.use(bodyParser.urlencoded({ extended: false }));
+// required for JSON based POST requests
 app.use(bodyParser.json());
 
 app.use(stylus.middleware(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/ajax',function(req,res){
-//  var cmd = req.cmd;
-//  console.log("cmd = " + cmd);
-  data = { "temp" : 25.4 };
-//  res.send(data);
-  
-  var controlReq = JSON.stringify({ "cmd" :  "getTemperature" });
-  console.log("JSON request: " + controlReq);
-  
-  var fd = fs.openSync("/tmp/gaerboxReqFifo", "w");
+app.use("/js", express.static(path.join(__dirname, "/node_modules/bootstrap/dist/js")));
+app.use("/js", express.static(path.join(__dirname, "/node_modules/jquery/dist")));
+app.use("/js", express.static(path.join(__dirname, "/node_modules/popper.js/dist")));
+app.use("/css", express.static(path.join(__dirname, "/node_modules/bootstrap/dist/css")));
+
+
+app.post('/ajax',function(req,res){
+	console.log("AJAX POST handler ...");
+	
+	var controlReq = JSON.stringify(req.body);
+	console.log("  received body: " +  controlReq);
+	var fd = fs.openSync("/tmp/gaerboxReqFifo", "w");
    
-  if (fd) {
-	  console.log("opened FIFO for writing");
-	  var written = fs.writeSync(fd, controlReq);
-	  if (written == controlReq.length) {
-		  console.log("written");
-	  } else {
-		  console.log("error: during writing");
-	  }
-  } else {
-	  console.log("error: opening FIFO for writing");
-  }
-  fs.closeSync(fd)
+	if (fd) {
+		console.log("  opened FIFO for writing");
+		var written = fs.writeSync(fd, controlReq);
+		if (written == controlReq.length) {
+			console.log("  successfully written");
+		} else {
+			console.log("  error: couldn't write data");
+		}
+	} else {
+		console.log("  error: could't open FIFO");
+	}
+	fs.closeSync(fd);
 
-  data = fs.readFileSync("/tmp/gaerboxRespFifo")
-  
-  console.log("Read response from FIFO: " + data)
-
-  res.send(data);
+	var data = fs.readFileSync("/tmp/gaerboxRespFifo");
+	console.log("  got response from controlDaemon: " + data);
+	res.send(data);
 });
 
 app.get('/', function(req, res, next) {
-  res.render('index', { title: 'Gaerbox - Home' });
+	res.render('index', { title: 'Gaerbox Control' });
 });
 
 app.listen(3000,function(){
-  console.log("Started on PORT 3000");
+	console.log("Started on PORT 3000");
 })
 
 
