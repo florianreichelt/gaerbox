@@ -99,8 +99,11 @@ def processRequest(request):
             gb.reset()
             pushResponse("ack")
         elif cmd == "getTemperature":
-            temp = gb.temperatureLog.last()
-            pushResponse("ackValue", temp.toDict())
+            try:
+                temp = gb.temperatureLog.last()
+                pushResponse("ackValue", temp.toDict())
+            except:
+                pushResponse("nack")
         else:
             pushResponse("unsup")
 
@@ -112,8 +115,8 @@ try:
         if not reqQueue.empty():
             request = reqQueue.get()
 
-        time.sleep(0.25)
         processRequest(request)
+        time.sleep(0.25)
 
         #timeService.waitUntil(currentTime + 10.0, 12.0)
 

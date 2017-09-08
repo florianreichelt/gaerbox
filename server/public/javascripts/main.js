@@ -10,17 +10,18 @@ function ajaxGetTemp() {
 	console.log('hello from blubb()')
     value = { 'cmd' : 'getTemperature' }; 
     $.ajax({
-        type: 'POST',
-        data: JSON.stringify(value),
+        type: 'GET',
+        data: value,
         dataType: 'json',
-        contentType: 'application/json',
+        contentType: 'application/json; charset=utf8',
         url: '/ajax',
         success: function(response) {
-            console.log('success1');
+            console.log('received: ' + JSON.stringify(response));
+
             try {
             	var temp = response.value.temp;
             	console.log("AJAX received temperature: " + temp.toString());
-            	
+            
             	$("#idCurrentTemp").text(temp)            	
             } catch (e) {
             	console.log("error: can't parse AJAX JSON response. Reponse was: " + response);
@@ -77,7 +78,6 @@ $(document).ready(function() {
 	ajaxGetTemp();
 	console.log("Registering interval 10s");
 	timer = setInterval(function() {
-//		console.log("triggered");
 		ajaxGetTemp();
 	}, 5000);
 	
@@ -85,5 +85,4 @@ $(document).ready(function() {
 		console.log("Button clicked");
 		ajaxSetTemp();
 	});
-
 });

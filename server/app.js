@@ -13,6 +13,7 @@ app.set('view engine', 'jade');
 //app.use(bodyParser.urlencoded({ extended: false }));
 // required for JSON based POST requests
 app.use(bodyParser.json());
+//app.use(bodyParser.urlencoded({ extended : true }));
 
 app.use(stylus.middleware(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -23,30 +24,48 @@ app.use("/js", express.static(path.join(__dirname, "/node_modules/popper.js/dist
 app.use("/css", express.static(path.join(__dirname, "/node_modules/bootstrap/dist/css")));
 
 
-app.post('/ajax',function(req,res){
-	console.log("AJAX POST handler ...");
+app.get('/ajax', function(req, res) {
+	console.log("AJAX GET handler ...");
+	
+	var controlReq = JSON.stringify(req.query);
+	console.log("  received data: " +  controlReq);
+
+    var data = requestControlDaemon(controlReq, data);
+
+	res.send(data);
+});
+
+app.post('/ajax', function(req, res) {
+    console.log("AJAX POST handler ...");
 	
 	var controlReq = JSON.stringify(req.body);
-	console.log("  received body: " +  controlReq);
-	var fd = fs.openSync("/tmp/gaerboxReqFifo", "w");
+	console.log("  received data: " +  controlReq);
+
+    var data = requestControlDaemon(controlReq, data);
+
+	res.send(data);
+});
+
+function requestControlDaemon(request, response) {
+    var fd = fs.openSync("/tmp/gaerboxReqFifo", "w");
    
 	if (fd) {
-		console.log("  opened FIFO for writing");
-		var written = fs.writeSync(fd, controlReq);
-		if (written == controlReq.length) {
-			console.log("  successfully written");
+		console.log("opened FIFO for writing");
+		var written = fs.writeSync(fd, request);
+		if (written == request.length) {
+			console.log("successfully written");
 		} else {
-			console.log("  error: couldn't write data");
+			console.log("error: couldn't write data");
 		}
 	} else {
-		console.log("  error: could't open FIFO");
+		console.log("error: could't open FIFO");
 	}
 	fs.closeSync(fd);
 
 	var data = fs.readFileSync("/tmp/gaerboxRespFifo");
-	console.log("  got response from controlDaemon: " + data);
-	res.send(data);
-});
+	console.log("got response from controlDaemon: " + data);
+    return data;
+}
 
 app.get('/', function(req, res, next) {
 	res.render('index', { title: 'Gaerbox Control' });
