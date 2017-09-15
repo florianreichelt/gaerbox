@@ -1,0 +1,11 @@
+#!/bin/bash
+
+DIR_CUR=$(dirname "$(readlink -f "$0")")
+DIR_LOG=$DIR_CUR/logs
+
+mkdir -p $DIR_LOG
+
+echo "Starting gaerbox control ..."
+#exec 1> >(logger -s -t $(basename $0)) 2>&1
+python3.4 $DIR_CUR/core/controlDaemon.py 2>&1>$DIR_LOG/gaerboxControl.log
+

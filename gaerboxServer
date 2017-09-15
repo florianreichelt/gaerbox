@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DIR_CUR=$(dirname "$(readlink -f "$0")")
+DIR_LOG=$DIR_CUR/logs
+DIR_SERVER=$DIR_CUR/server
+
+mkdir -p $DIR_LOG
+
+echo "Starting gaerbox server ..."
+#exec 1> >(logger -s -t $(basename $0)) 2>&1
+npm start $DIR_SERVER 2>&1>$DIR_LOG/gaerboxServer.log
+

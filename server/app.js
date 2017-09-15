@@ -24,23 +24,19 @@ app.use("/js", express.static(path.join(__dirname, "/node_modules/popper.js/dist
 app.use("/css", express.static(path.join(__dirname, "/node_modules/bootstrap/dist/css")));
 
 
-app.get('/ajax', function(req, res) {
+app.get('/ajaxGet', function(req, res) {
 	console.log("AJAX GET handler ...");
 	
 	var controlReq = JSON.stringify(req.query);
-	console.log("  received data: " +  controlReq);
-
     var data = requestControlDaemon(controlReq, data);
 
 	res.send(data);
 });
 
-app.post('/ajax', function(req, res) {
+app.post('/ajaxPost', function(req, res) {
     console.log("AJAX POST handler ...");
 	
 	var controlReq = JSON.stringify(req.body);
-	console.log("  received data: " +  controlReq);
-
     var data = requestControlDaemon(controlReq, data);
 
 	res.send(data);
@@ -48,12 +44,14 @@ app.post('/ajax', function(req, res) {
 
 function requestControlDaemon(request, response) {
     var fd = fs.openSync("/tmp/gaerboxReqFifo", "w");
+    
+    console.log("  request to controlDaemon: " +  request);
    
 	if (fd) {
-		console.log("opened FIFO for writing");
+		//console.log("opened FIFO for writing");
 		var written = fs.writeSync(fd, request);
 		if (written == request.length) {
-			console.log("successfully written");
+			//console.log("successfully written");
 		} else {
 			console.log("error: couldn't write data");
 		}
@@ -63,7 +61,7 @@ function requestControlDaemon(request, response) {
 	fs.closeSync(fd);
 
 	var data = fs.readFileSync("/tmp/gaerboxRespFifo");
-	console.log("got response from controlDaemon: " + data);
+	console.log("  response from controlDaemon: " + data);
     return data;
 }
 
@@ -71,10 +69,8 @@ app.get('/', function(req, res, next) {
 	res.render('index', { title: 'Gaerbox Control' });
 });
 
-app.listen(3000,function(){
-	console.log("Started on PORT 3000");
-})
-
-
+app.listen(80, function(){
+	console.log("Started on PORT 80");
+});
 
 module.exports = app;

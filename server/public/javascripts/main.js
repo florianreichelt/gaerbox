@@ -14,7 +14,7 @@ function ajaxGetTemp() {
         data: value,
         dataType: 'json',
         contentType: 'application/json; charset=utf8',
-        url: '/ajax',
+        url: '/ajaxGet',
         success: function(response) {
             console.log('received: ' + JSON.stringify(response));
 
@@ -37,12 +37,16 @@ function ajaxSetTemp() {
 		
 	try {
 		var value = parseInt($("#inputSetTemperature").val());
+		$("#inputSetTemperature").val("");
 		
 		console.log("input value: " + value);
 		
-		$("#labelSetTemperatureResponse").text("");
-		
 		if (value > 0 && !isNaN(value)) {
+			$("#btnSetTemperature").prop("disabled", true);
+			
+			$("#alertSetTemperature").text("Submitting ...");
+			$("#alertSetTemperature").show();
+			
 			var data = { 
 					'cmd' : 'setTemperature', 
 					'value' : value
@@ -52,37 +56,50 @@ function ajaxSetTemp() {
 			        data: JSON.stringify(data),
 			        dataType: 'json',
 			        contentType: 'application/json',
-			        url: '/ajax',
+			        url: '/ajaxPost',
 			        success: function(response) {
-			            console.log('success2');
+			        	$("#btnSetTemperature").prop("disabled", false);
+			        	
 			            try {
 			            	console.log("AJAX received response: " + response.response);
 			            	
-			            	$("#labelSetTemperatureResponse").text(response.response)            	
+			            	if (response.response === "ack") {
+			            		$("#alertSetTemperature").text("Gaerbox temperature successfully updated");
+			            		$("#alertSetTemperature").show();
+			            	}           	
 			            } catch (e) {
 			            	console.log("error: can't parse AJAX JSON response. Reponse was: " + text);
 			            }
 			        },
-			        error: ajaxError
+			        error: function(xhr, status, error) {
+			        	$("#btnSetTemperature").prop("disabled", false);
+			        	
+			        	ajaxError(xhr, status, error);
+			        }
 			    });	
 		} else {
 			console.log("  error: NaN value typed");
+			$("#alertSetTemperature").text("Input error");
+			$("#alertSetTemperature").show();
 		}
 	} catch (e) {
 		console.log("error: catched exception in ajaxSetTemp()");
+		
+		$("#alertSetTemperature").text("Internal error");
+		$("#alertSetTemperature").show();
 	}	
 }
 
 
 $(document).ready(function() {
 	ajaxGetTemp();
-	console.log("Registering interval 10s");
+//	console.log("Registering interval 5s");
 	timer = setInterval(function() {
 		ajaxGetTemp();
 	}, 5000);
 	
-	$("#btnSetTemp").on("click", function(e) {		
-		console.log("Button clicked");
+	$("#btnSetTemperature").on("click", function(e) {		
+//		console.log("Button clicked");
 		ajaxSetTemp();
 	});
 });

@@ -2,20 +2,21 @@ extends layout
 
 block content
   div.container
-  h1= title
-
-  div.container
-    h2 Live temperature
-    p#idCurrentTemp
+    h1= title
   
-  div.container
-    form
-      div.form-group
-        label(for="inputSetTemperature").
-          Set temperature value
-        input#inputSetTemperature(class="form-control" placeholder="Enter temperature")
-        button#btnSetTemp(class="btn btn-primary" type="button").
-          Submit temperature
-        label#labelSetTemperatureResponse
-
-  script(src="/javascripts/main.js")
+    div.container
+      h2 Live temperature
+      p#idCurrentTemp
+    
+    div.container
+      form
+        div.form-group
+          label(for="inputSetTemperature").
+            Request new temperature:
+          input#inputSetTemperature(class="form-control" placeholder="Enter temperature")
+          div#alertSetTemperature(class="alert alert-info" style="display: none" role="alert")
+            NOTHING
+          button#btnSetTemperature(class="btn btn-primary" type="button").
+            Submit temperature
+  
+    script(src="/javascripts/main.js")
